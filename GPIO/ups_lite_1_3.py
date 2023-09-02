@@ -44,7 +44,7 @@ class UPS:
             voltage = swapped * 0.305 /1000
             return voltage
         except Exception as e:
-            logging.error('UPS - {e}'.format(e=e))
+            logging.error('UPS V1.3: {e}'.format(e=e))
             return 'err'
 
     def capacity(self):
@@ -55,7 +55,7 @@ class UPS:
             capacity = swapped/256
             return capacity
         except Exception as e:
-            logging.error('UPS - {e}'.format(e=e))
+            logging.error('UPS V1.3: {e}'.format(e=e))
             return 'err'
 
     def charging(self):
@@ -65,7 +65,7 @@ class UPS:
             if (GPIO.input(4) == GPIO.LOW):      
                 return '-'
         except Exception as e:
-            logging.error('UPS - {e}'.format(e=e))
+            logging.error('UPS V1.3: {e}'.format(e=e))
             return 'err'
 
 
@@ -83,7 +83,7 @@ class UPSLite(plugins.Plugin):
         GPIO.setup(4,GPIO.IN)  # GPIO4 is used to detect whether an external power supply is inserted
 
     def on_loaded(self):
-        logging.info('UPS - is Loaded')  
+        logging.info('UPS V1.3: Successfully loaded ...')  
         self.ups = UPS()
 
     def on_ui_setup(self, ui):
@@ -91,38 +91,38 @@ class UPSLite(plugins.Plugin):
                                            label_font=fonts.Bold, text_font=fonts.Medium))
 
     def on_unload(self, ui):
-        logging.info('UPS - is Unloaded')  
+        logging.info('UPS V1.3: Successfully Unloaded ...')  
         with ui._lock:
             ui.remove_element('ups')
 
     def on_ui_update(self, ui):
-        logging.debug('UPS - start checking')  
+        logging.debug('UPS V1.3: start checking')  
         capacity = self.ups.capacity()
         charging = self.ups.charging()
-        logging.debug(f'UPS - battery on "{capacity}%" and charging is: "{charging}"')
+        logging.debug(f'UPS V1.3: battery on "{capacity}%" and charging is: "{charging}"')
         if type(capacity) == float:
             capacity = int(capacity)
             with ui._lock:
                 ui.set('ups', f"{capacity}%")
                 if capacity >= Full_Battery and charging == '+':
-                    logging.info(f'UPS - Full battery (>= {Full_Battery}%)')
+                    logging.info(f'UPS V1.3: Full battery (>= {Full_Battery}%)')
                     #ui.update(force=True, new_data={'status': 'Battery full'})
                 if capacity == 100:
-                    logging.info('UPS - Full battery 100%')
+                    logging.info('UPS V1.3: Full battery 100%')
                     #ui.update(force=True, new_data={'status': 'Battery full'})
                 elif capacity == Half_Battery and  charging == '-':
-                    logging.info(f'UPS - Half way battery (<= {Half_Battery}%)')
+                    logging.info(f'UPS V1.3: Half way battery (<= {Half_Battery}%)')
                     #ui.update(force=True, new_data={'status': 'Battery in half way'})
                 elif capacity <= Die_Battery and  charging == '-':
-                    logging.info(f'UPS - Low battery (<= {Die_Battery}%)')
+                    logging.info(f'UPS V1.3: Low battery (<= {Die_Battery}%)')
                     #ui.update(force=True, new_data={'status': 'Battery about to die please charge!'})
                 elif capacity <= Shutdown_On and  charging == '-':
-                    logging.info(f'UPS - Empty battery (<= {Shutdown_On}%): shuting down')
+                    logging.info(f'UPS V1.3: Empty battery (<= {Shutdown_On}%): shuting down')
                     #ui.update(force=True, new_data={'status': 'Battery exhausted, bye ...'})
                     pwnagotchi.shutdown()
         else:
             with ui._lock:
                 ui.set('ups', f"ERR")
-                logging.info('UPS - No battery detected')
+                logging.info('UPS V1.3: No battery detected')
                 #ui.update(force=True, new_data={'status': 'No battery detected'})
         
