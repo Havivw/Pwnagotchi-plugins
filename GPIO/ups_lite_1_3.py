@@ -87,7 +87,7 @@ class UPSLite(plugins.Plugin):
         self.ups = UPS()
 
     def on_ui_setup(self, ui):
-        ui.add_element('ups', LabeledValue(color=BLACK, label='UPS', value='-%', position=(ui.width() / 2 + 15, 0),
+        ui.add_element('ups', LabeledValue(color=BLACK, label='B', value='-%', position=(ui.width() / 2 + 15, 0),
                                            label_font=fonts.Bold, text_font=fonts.Medium))
 
     def on_unload(self, ui):
