@@ -83,6 +83,7 @@ class UPSLite(plugins.Plugin):
         GPIO.setup(4,GPIO.IN)  # GPIO4 is used to detect whether an external power supply is inserted
 
     def on_loaded(self):
+        logging.info('UPS - is Loaded')  
         self.ups = UPS()
 
     def on_ui_setup(self, ui):
@@ -90,6 +91,7 @@ class UPSLite(plugins.Plugin):
                                            label_font=fonts.Bold, text_font=fonts.Medium))
 
     def on_unload(self, ui):
+        logging.info('UPS - is Unloaded')  
         with ui._lock:
             ui.remove_element('ups')
 
@@ -123,5 +125,4 @@ class UPSLite(plugins.Plugin):
                 ui.set('ups', f"ERR")
                 logging.info('UPS - No battery detected')
                 #ui.update(force=True, new_data={'status': 'No battery detected'})
-        sleep(30)
         
