@@ -9,6 +9,7 @@
 # To display external power supply status you need to bridge the necessary pins on the UPS-Lite board. See instructions in the UPS-Lite repo.
 import logging
 import struct
+from time import sleep
 
 import RPi.GPIO as GPIO
 
@@ -22,6 +23,11 @@ CW2015_ADDRESS   = 0X62
 CW2015_REG_VCELL = 0X02
 CW2015_REG_SOC   = 0X04
 CW2015_REG_MODE  = 0X0A
+
+Full_Battery = 98.0
+Half_Battery = 50.0
+Die_Battery = 15.0
+Shutdown_On = 2.0
 
 # TODO: add enable switch in config.yml an cleanup all to the best place
 class UPS:
@@ -37,7 +43,8 @@ class UPS:
             swapped = struct.unpack("<H", struct.pack(">H", read))[0]
             voltage = swapped * 0.305 /1000
             return voltage
-        except:
+        except Exception as e:
+            logging.error('UPS - {e}'.format(e=e))
             return 'err'
 
     def capacity(self):
@@ -47,7 +54,8 @@ class UPS:
             swapped = struct.unpack("<H", struct.pack(">H", read))[0]
             capacity = swapped/256
             return capacity
-        except:
+        except Exception as e:
+            logging.error('UPS - {e}'.format(e=e))
             return 'err'
 
     def charging(self):
@@ -56,7 +64,8 @@ class UPS:
                 return '+'
             if (GPIO.input(4) == GPIO.LOW):      
                 return '-'
-        except:
+        except Exception as e:
+            logging.error('UPS - {e}'.format(e=e))
             return 'err'
 
 
@@ -65,16 +74,19 @@ class UPSLite(plugins.Plugin):
     __editedby__ = 'Kilg00re - Havivv1305@gmail.com'
     __version__ = '1.0.0'
     __license__ = 'GPL3'
-    __description__ = 'A plugin that will add a voltage indicator for the UPS Lite v1.1'
+    __description__ = 'A plugin that will add a voltage indicator for the UPS Lite v1.3'
 
     def __init__(self):
         self.ups = None
+        GPIO.setmode(GPIO.BCM)
+        GPIO.setwarnings(False)
+        GPIO.setup(4,GPIO.IN)  # GPIO4 is used to detect whether an external power supply is inserted
 
     def on_loaded(self):
         self.ups = UPS()
 
     def on_ui_setup(self, ui):
-        ui.add_element('ups', LabeledValue(color=BLACK, label='UPS', value='0%/0V', position=(ui.width() / 2 + 15, 0),
+        ui.add_element('ups', LabeledValue(color=BLACK, label='UPS', value='-%', position=(ui.width() / 2 + 15, 0),
                                            label_font=fonts.Bold, text_font=fonts.Medium))
 
     def on_unload(self, ui):
@@ -82,29 +94,34 @@ class UPSLite(plugins.Plugin):
             ui.remove_element('ups')
 
     def on_ui_update(self, ui):
-        fullbattery = 98.0
-        halfbattery = 50.0
-        abouttodie = 15.0
-        shutdownonless = 2.0
+        logging.debug('UPS - start checking')  
         capacity = self.ups.capacity()
         charging = self.ups.charging()
+        logging.debug(f'UPS - battery on "{capacity}%" and charging is: "{charging}"')
         if type(capacity) == float:
             capacity = int(capacity)
-            ui.set('ups', f"{capacity}% {charging}")
-            if capacity >= fullbattery and charging == '+':
-                logging.info('[ups_lite] Full battery (>= 98%%)')
-                ui.update(force=True, new_data={'status': 'Battery full'})
-            elif capacity == halfbattery and  charging == '-':
-                logging.info('[ups_lite] Half way battery (<= 50%%)')
-                ui.update(force=True, new_data={'status': 'Battery in half way'})
-            elif capacity <= abouttodie and  charging == '-':
-                logging.info('[ups_lite] Low battery (<= 15%%)')
-                ui.update(force=True, new_data={'status': 'Battery about to die please charge!'})
-            elif capacity <= shutdownonless and  charging == '-':
-                logging.info('[ups_lite] Empty battery (<= %s%%): shuting down' % shutdownonless)
-                ui.update(force=True, new_data={'status': 'Battery exhausted, bye ...'})
-                pwnagotchi.shutdown()
+            with ui._lock:
+                ui.set('ups', f"{capacity}%")
+                if capacity >= Full_Battery and charging == '+':
+                    logging.info(f'UPS - Full battery (>= {Full_Battery}%)')
+                    #ui.update(force=True, new_data={'status': 'Battery full'})
+                if capacity == 100:
+                    logging.info('UPS - Full battery 100%')
+                    #ui.update(force=True, new_data={'status': 'Battery full'})
+                elif capacity == Half_Battery and  charging == '-':
+                    logging.info(f'UPS - Half way battery (<= {Half_Battery}%)')
+                    #ui.update(force=True, new_data={'status': 'Battery in half way'})
+                elif capacity <= Die_Battery and  charging == '-':
+                    logging.info(f'UPS - Low battery (<= {Die_Battery}%)')
+                    #ui.update(force=True, new_data={'status': 'Battery about to die please charge!'})
+                elif capacity <= Shutdown_On and  charging == '-':
+                    logging.info(f'UPS - Empty battery (<= {Shutdown_On}%): shuting down')
+                    #ui.update(force=True, new_data={'status': 'Battery exhausted, bye ...'})
+                    pwnagotchi.shutdown()
         else:
-            ui.set('ups', f"ERR")
-            logging.info('[ups_lite] No battery detected')
-            ui.update(force=True, new_data={'status': 'No battery detected'})
+            with ui._lock:
+                ui.set('ups', f"ERR")
+                logging.info('UPS - No battery detected')
+                #ui.update(force=True, new_data={'status': 'No battery detected'})
+        sleep(30)
+        
