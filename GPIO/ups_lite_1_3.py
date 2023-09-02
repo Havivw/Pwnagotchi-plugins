@@ -105,16 +105,24 @@ class UPSLite(plugins.Plugin):
             with ui._lock:
                 ui.set('ups', f"{capacity}%")
                 if capacity >= Full_Battery and charging == '+':
+                    plugins.toggle_plugin(name='bt-tether', enable=True)
                     logging.info(f'UPS V1.3: Full battery (>= {Full_Battery}%)')
+                    #ui.update(force=True, new_data={'status': 'Battery full'})
+                if capacity >= 50 and charging == '-':
+                    logging.info('UPS V1.3: battery is above 50%% enable tethering')
+                    plugins.toggle_plugin(name='bt-tether', enable=True)
                     #ui.update(force=True, new_data={'status': 'Battery full'})
                 if capacity == 100:
                     logging.info('UPS V1.3: Full battery 100%')
+                    plugins.toggle_plugin(name='bt-tether', enable=True)
                     #ui.update(force=True, new_data={'status': 'Battery full'})
                 elif capacity == Half_Battery and  charging == '-':
-                    logging.info(f'UPS V1.3: Half way battery (<= {Half_Battery}%)')
+                    logging.info(f'UPS V1.3: Half way battery (<= {Half_Battery}%) disable tethering')
+                    plugins.toggle_plugin(name='bt-tether', enable=False)
                     #ui.update(force=True, new_data={'status': 'Battery in half way'})
                 elif capacity <= Die_Battery and  charging == '-':
-                    logging.info(f'UPS V1.3: Low battery (<= {Die_Battery}%)')
+                    plugins.toggle_plugin(name='bt-tether', enable=False)
+                    logging.info(f'UPS V1.3: Low battery (<= {Die_Battery}%) disable tethering')
                     #ui.update(force=True, new_data={'status': 'Battery about to die please charge!'})
                 elif capacity <= Shutdown_On and  charging == '-':
                     logging.info(f'UPS V1.3: Empty battery (<= {Shutdown_On}%): shuting down')
