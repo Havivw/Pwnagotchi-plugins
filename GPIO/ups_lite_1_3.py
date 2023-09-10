@@ -28,6 +28,7 @@ Full_Battery = 98.0
 Half_Battery = 50.0
 Die_Battery = 15.0
 Shutdown_On = 2.0
+BT_Auto = False # Auto enable BT tethering when battery is above 50% and disable when below 50%
 
 # TODO: add enable switch in config.yml an cleanup all to the best place
 class UPS:
@@ -103,25 +104,31 @@ class UPSLite(plugins.Plugin):
         if type(capacity) == float:
             capacity = int(capacity)
             with ui._lock:
-                ui.set('ups', f"{capacity}%")
+                ui.set('ups', f"{capacity}{charging}%")
                 if capacity >= Full_Battery and charging == '+':
-                    plugins.toggle_plugin(name='bt-tether', enable=True)
+                    if BT_Auto:
+                        plugins.toggle_plugin(name='bt-tether', enable=True)
                     logging.info(f'UPS V1.3: Full battery (>= {Full_Battery}%)')
                     #ui.update(force=True, new_data={'status': 'Battery full'})
-                if capacity >= 50 and charging == '-':
+                elif capacity > Half_Battery and charging == '-':
                     logging.info('UPS V1.3: battery is above 50%% enable tethering')
-                    plugins.toggle_plugin(name='bt-tether', enable=True)
+                    if BT_Auto:
+                        plugins.toggle_plugin(name='bt-tether', enable=True)
                     #ui.update(force=True, new_data={'status': 'Battery full'})
+
                 if capacity == 100:
                     logging.info('UPS V1.3: Full battery 100%')
-                    plugins.toggle_plugin(name='bt-tether', enable=True)
+                    if BT_Auto:
+                        plugins.toggle_plugin(name='bt-tether', enable=True)
                     #ui.update(force=True, new_data={'status': 'Battery full'})
-                elif capacity == Half_Battery and  charging == '-':
+                elif capacity <= Half_Battery and  charging == '-':
                     logging.info(f'UPS V1.3: Half way battery (<= {Half_Battery}%) disable tethering')
-                    plugins.toggle_plugin(name='bt-tether', enable=False)
+                    if BT_Auto:
+                        plugins.toggle_plugin(name='bt-tether', enable=False)
                     #ui.update(force=True, new_data={'status': 'Battery in half way'})
                 elif capacity <= Die_Battery and  charging == '-':
-                    plugins.toggle_plugin(name='bt-tether', enable=False)
+                    if BT_Auto:
+                        plugins.toggle_plugin(name='bt-tether', enable=False)
                     logging.info(f'UPS V1.3: Low battery (<= {Die_Battery}%) disable tethering')
                     #ui.update(force=True, new_data={'status': 'Battery about to die please charge!'})
                 elif capacity <= Shutdown_On and  charging == '-':
