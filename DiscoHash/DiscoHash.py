@@ -88,7 +88,7 @@ class DiscoHash(plugins.Plugin):
                 {
                     'title': f'(ᵔ◡◡ᵔ) {pwnagotchi.name()} sniffed a new hash!',
                     'color': 289968,
-                    'url': f'https://pwnagotchi.ai/pwnfile/#!{fingerprint}',
+                    'url': f'https://opwngrid.xyz/pwnfile/#!{fingerprint}',
                     'description': '__**Hash Information**__',
                     'fields': [
                         {'name': 'Hash:', 'value': f'`{hash_data}`', 'inline': False},
